@@ -40,6 +40,15 @@ const RegisterPage = ({
           </FieldDescription>
         </Field>
         <Field>
+          <FieldLabel htmlFor="username">Username</FieldLabel>
+          <Input
+            id="username"
+            type="text"
+            placeholder="Nhập username của bạn"
+            required
+          />
+        </Field>
+        <Field>
           <Field className="grid grid-cols-2 gap-4">
             <Field>
               <FieldLabel htmlFor="password">Mật khẩu</FieldLabel>
