@@ -1,4 +1,9 @@
 import "./globals.css";
+import { Geist } from 'next/font/google'
+ 
+const geist = Geist({
+  subsets: ['latin'],
+})
 
 export default function RootLayout({
   children,
@@ -7,7 +12,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="">
+      <body className={geist.className}>
         {children}
       </body>
     </html>
