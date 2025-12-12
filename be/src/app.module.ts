@@ -14,6 +14,7 @@ import { JwtModule, JwtModuleAsyncOptions } from '@nestjs/jwt';
 import { jwtConfig } from './configs/jwt.config';
 import { ThrottlerModule, ThrottlerModuleOptions, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
+import { TagModule } from './modules/tag/tag.module';
 
 @Module({
   imports: [
@@ -45,7 +46,8 @@ import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
       }),
     }),
     UserModule,
-    AuthModule
+    AuthModule,
+    TagModule
   ],
   controllers: [AppController],
   providers: [
