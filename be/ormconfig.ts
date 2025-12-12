@@ -2,7 +2,7 @@ import { DataSource } from 'typeorm';
 import { config } from 'dotenv';
 import { join } from 'path/win32';
 
-config({ path: join(__dirname, '..', '.env') }); // Tải các biến môi trường từ file .env
+config(); // Tải các biến môi trường từ file .env
 
 export default new DataSource({
   type: 'mysql',

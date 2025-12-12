@@ -51,6 +51,7 @@ export class UserController {
     };
   }
 
+  @UseGuards(JwtGuard)
   @Get('all')
   async getAllUsers(
     @Query('page') page?: number,
@@ -67,11 +68,11 @@ export class UserController {
 
     return {
       message: 'List users successfully',
-      data: result.data,
-      pagination: result.pagination,
+      data: result,
     };
   }
 
+  @UseGuards(JwtGuard)
   @Get('count')
   async countUsers() {
     const { total } = await this.userService.countUsers();

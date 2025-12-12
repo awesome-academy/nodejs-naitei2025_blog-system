@@ -10,9 +10,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard } from '@nestjs/throttler';
 
 @Module({
-  imports: [
-    UserModule
-  ],
+  imports: [UserModule],
   controllers: [AuthController],
   providers: [
     AuthService,
@@ -20,10 +18,10 @@ import { ThrottlerGuard } from '@nestjs/throttler';
     LocalAuthGuard,
     JwtStrategy,
     JwtGuard,
-    // {
-    //   provide: APP_GUARD,
-    //   useClass: ThrottlerGuard,
-    // }
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
   exports: [AuthService],
 })

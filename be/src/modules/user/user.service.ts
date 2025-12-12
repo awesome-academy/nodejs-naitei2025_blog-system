@@ -97,7 +97,9 @@ export class UserService {
     return result;
   }
 
-  async findByIdWithArticleCount(id: number): Promise<UserEntity & { articleCount: number }> {
+  async findByIdWithArticleCount(
+    id: number,
+  ): Promise<UserEntity & { articleCount: number }> {
     if (isNaN(id)) {
       throw new BadRequestException('Invalid user ID', {
         description: 'User ID must be a number',
@@ -273,33 +275,61 @@ export class UserService {
     return user.following;
   }
 
+  async countFollowers(userId: number) {
+    const totalFollowers = await this.userRepository.count({
+      where: { following: { id: userId } },
+    });
+    return totalFollowers;
+  }
+
+  async countFollowing(userId: number) {
+    const totalFollowing = await this.userRepository.count({
+      where: { followers: { id: userId } },
+    });
+    return totalFollowing;
+  }
+
+  async countArticles(userId: number) {
+    const user = await this.findById(userId);
+    return user.articles.length;
+  }
+
   async listUsers(options: {
     page?: number;
     limit?: number;
     username?: string;
     email?: string;
-  }) 
-  {
+  }) {
     const page = options.page && options.page > 0 ? options.page : 1;
     const limit = options.limit && options.limit > 0 ? options.limit : 10;
-    const where: any = {};
+
+    const queryBuilder = this.userRepository.createQueryBuilder('user');
+
     if (options.username) {
-      where.username = Like(`%${options.username}%`);
+      queryBuilder.andWhere('user.username LIKE :username', {
+        username: `%${options.username}%`,
+      });
     }
     if (options.email) {
-      where.email = Like(`%${options.email}%`);
+      queryBuilder.andWhere('user.email LIKE :email', {
+        email: `%${options.email}%`,
+      });
     }
 
-    const [data, total] = await this.userRepository.findAndCount({
-      where,
-      skip: (page - 1) * limit,
-      take: limit,
-      order: { id: 'ASC' },
-    });
+    // Tối ưu: Đếm số lượng relation bằng subquery trong 1 lần gọi DB
+    queryBuilder
+      .loadRelationCountAndMap('user.followingCount', 'user.following')
+      .loadRelationCountAndMap('user.followersCount', 'user.followers')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .orderBy('user.id', 'ASC');
+
+    const [users, total] = await queryBuilder.getManyAndCount();
+
     const totalPages = Math.ceil(total / limit);
 
     return {
-      data,
+      users,
       pagination: {
         page,
         limit,
