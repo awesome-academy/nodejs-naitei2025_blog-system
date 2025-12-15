@@ -18,6 +18,8 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtGuard } from '../auth/guards/jwt.guard';
 import { IJwtPayload } from 'src/common/interfaces/IJwtPayload';
+import { Serialize } from 'src/common/decorators/serialize.decorator';
+import { UserDetailDto, UserListItemDto } from './dto/user-response.dto';
 
 @Controller('user')
 export class UserController {
@@ -28,12 +30,12 @@ export class UserController {
     return await this.userService.create(createUserDto);
   }
 
-  @UseInterceptors(ClassSerializerInterceptor)
   @UseGuards(JwtGuard)
+  @Serialize(UserDetailDto)
   @Get()
   async getCurrentUser(@Req() req: any) {
     const { id } = req.user as IJwtPayload;
-    const user = await this.userService.findByIdWithArticleCount(id);
+    const user = await this.userService.findById(id);
     return {
       message: 'Get current user successfully',
       data: user,
@@ -42,6 +44,7 @@ export class UserController {
 
   @UseGuards(JwtGuard)
   @Patch()
+  @Serialize(UserDetailDto)
   async update(@Req() req: any, @Body() updateUserDto: UpdateUserDto) {
     const { id } = req.user as IJwtPayload;
     const user = await this.userService.update(id, updateUserDto);
@@ -52,6 +55,7 @@ export class UserController {
   }
 
   @UseGuards(JwtGuard)
+  @Serialize(UserListItemDto)
   @Get('all')
   async getAllUsers(
     @Query('page') page?: number,

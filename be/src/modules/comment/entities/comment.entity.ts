@@ -6,8 +6,14 @@ import { Column, Entity, JoinColumn, ManyToOne, OneToMany } from 'typeorm';
 
 @Entity({ name: 'comments' })
 export class CommentEntity extends BaseEntity {
-  @Column({ length: 200, nullable: false })
+  @Column({ length: 500, nullable: false })
   body: string;
+
+  @Column({ default: 0 })
+  depth: number; // 0 = root, 1 = reply, 2 = reply of reply (MAX)
+
+  @Column({ default: 0 })
+  replyCount: number;
 
   @ManyToOne(() => UserEntity, { eager: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'authorId' })

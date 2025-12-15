@@ -1,4 +1,8 @@
-import { ClassSerializerInterceptor, Module } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+} from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -6,10 +10,6 @@ import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { typeORMConfig } from './configs/typeorm.config';
 import { UserModule } from './modules/user/user.module';
 import { AuthModule } from './modules/auth/auth.module';
-import { ArticleController } from './modules/article/article.controller';
-import { CommentController } from './modules/comment/comment.controller';
-import { TagController } from './modules/tag/tag.controller';
-import { NotificationController } from './modules/notification/notification.controller';
 import { JwtModule, JwtModuleAsyncOptions } from '@nestjs/jwt';
 import { jwtConfig } from './configs/jwt.config';
 import {
@@ -17,7 +17,10 @@ import {
   ThrottlerModuleOptions,
   ThrottlerGuard,
 } from '@nestjs/throttler';
-import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
+import { ArticleModule } from './modules/article/article.module';
+import { AuthMiddleware } from './common/middlewares/auth.middleware';
+import { TagModule } from './modules/tag/tag.module';
+import { CommentModule } from './modules/comment/comment.module';
 
 @Module({
   imports: [
@@ -50,14 +53,15 @@ import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
     }),
     UserModule,
     AuthModule,
+    ArticleModule,
+    TagModule,
+    CommentModule
   ],
   controllers: [AppController],
-  providers: [
-    AppService,
-    {
-      provide: APP_INTERCEPTOR,
-      useClass: ClassSerializerInterceptor,
-    },
-  ],
+  providers: [AppService],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(AuthMiddleware).forRoutes('*');
+  }
+}

@@ -5,6 +5,7 @@ import { CommentEntity } from 'src/modules/comment/entities/comment.entity';
 import { TagEntity } from 'src/modules/tag/entities/tag.entity';
 import { UserEntity } from 'src/modules/user/entities/user.entity';
 import {
+  AfterLoad,
   Column,
   DeleteDateColumn,
   Entity,
@@ -13,6 +14,8 @@ import {
   ManyToMany,
   ManyToOne,
   OneToMany,
+  RelationCount,
+  VirtualColumn,
 } from 'typeorm';
 
 @Entity({ name: 'articles' })
@@ -49,7 +52,7 @@ export class ArticleEntity extends BaseEntity {
   @Transform(({ value }) => value.map((tag: TagEntity) => tag.name) as string[])
   tagList: TagEntity[];
 
-  @OneToMany(() => CommentEntity, (comment) => comment.article)
+  @OneToMany(() => CommentEntity, (comment) => comment.article, { eager: true })
   comments: CommentEntity[];
 
   @ManyToOne(() => UserEntity, (user) => user.articles, {
@@ -59,7 +62,6 @@ export class ArticleEntity extends BaseEntity {
   @JoinColumn({ name: 'authorId' })
   author: UserEntity;
 
-  @Exclude()
   @ManyToMany(() => UserEntity, (user) => user.favoritedArticles)
   @JoinTable({
     name: 'user_favorite_articles',
@@ -68,10 +70,14 @@ export class ArticleEntity extends BaseEntity {
   })
   favoritedBy: UserEntity[];
 
-  @Exclude()
+  @VirtualColumn({
+    query: (alias) =>
+      `(SELECT COUNT(*) FROM user_favorite_articles ufa WHERE ufa.article_id = ${alias}.id)`,
+  })
+  favoritesCount: number;
+
   @DeleteDateColumn({ name: 'deleted_at', nullable: true })
   deletedAt?: Date;
 
-  @Exclude()
   declare id: number;
 }

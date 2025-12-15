@@ -2,7 +2,15 @@ import { Exclude } from 'class-transformer';
 import { BaseEntity } from 'src/common/class/base-entity';
 import { ArticleEntity } from 'src/modules/article/entities/article.entity';
 import { NotificationEntity } from 'src/modules/notification/entities/notification.entity';
-import { Column, Entity, JoinTable, ManyToMany, OneToMany } from 'typeorm';
+import {
+  AfterLoad,
+  Column,
+  Entity,
+  JoinTable,
+  ManyToMany,
+  OneToMany,
+  VirtualColumn,
+} from 'typeorm';
 
 @Entity({ name: 'users' })
 export class UserEntity extends BaseEntity {
@@ -15,7 +23,6 @@ export class UserEntity extends BaseEntity {
   @Column({ length: 10, unique: true, nullable: false })
   username: string;
 
-  @Exclude()
   @Column({ length: 200, nullable: false, select: false })
   password: string;
 
@@ -41,7 +48,6 @@ export class UserEntity extends BaseEntity {
   @ManyToMany(() => UserEntity, (user) => user.following)
   followers: UserEntity[];
 
-  @Exclude()
   @ManyToMany(() => ArticleEntity, (article) => article.favoritedBy)
   favoritedArticles: ArticleEntity[];
 
@@ -54,12 +60,29 @@ export class UserEntity extends BaseEntity {
   @OneToMany(() => NotificationEntity, (notification) => notification.recipient)
   notifications: NotificationEntity[];
 
-  @Exclude()
+  @VirtualColumn({
+    query: (alias) => {
+      return `(SELECT COUNT(*) FROM user_follows uf WHERE uf.follower_id = ${alias}.id)`;
+    },
+  })
+  followingCount: number;
+
+  @VirtualColumn({
+    query: (alias) => {
+      return `(SELECT COUNT(*) FROM user_follows uf WHERE uf.following_id = ${alias}.id)`;
+    },
+  })
+  followersCount: number;
+
+  @VirtualColumn({
+    query: (alias) => {
+      return `(SELECT COUNT(*) FROM articles a WHERE a.authorId = ${alias}.id AND a.deleted_at IS NULL)`;
+    },
+  })
+  articlesCount: number;
+
   declare id: number;
 
-  declare created_at: Date;
-
-  @Exclude()
   declare updated_at: Date;
 
   constructor(partial: Partial<UserEntity>) {

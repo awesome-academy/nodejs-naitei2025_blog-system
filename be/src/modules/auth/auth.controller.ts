@@ -16,7 +16,6 @@ import { LocalAuthGuard } from './guards/local-auth.guard';
 import { Throttle } from '@nestjs/throttler';
 import { LogInDto } from './dto/login.dto';
 import { UserEntity } from '../user/entities/user.entity';
-import { IUser } from 'src/common/interfaces/user.interface';
 
 @Controller('users')
 export class AuthController {

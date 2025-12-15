@@ -2,7 +2,6 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { LogInDto } from './dto/login.dto';
-import { IUser } from 'src/common/interfaces/user.interface';
 import { UserEntity } from '../user/entities/user.entity';
 import { plainToInstance } from 'class-transformer';
 
@@ -13,12 +12,12 @@ export class AuthService {
     private readonly userService: UserService,
   ) {}
   async signIn({ id, email }) {
+    const user = await this.userService.findById(id);
+
     const accessToken = await this.jwtService.signAsync({
       id,
-      email,
+      username: user.username,
     });
-
-    const user = await this.userService.findById(id);
 
     const result = plainToInstance(UserEntity, { ...user, token: accessToken });
 

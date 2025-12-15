@@ -12,7 +12,7 @@ import {
     LengthDistance, 
     StringOptional, 
     StringRequired 
-} from "src/common/decorators";
+} from "src/common/decorators/validate.decorator";
 
 export class CreateUserDto {
 

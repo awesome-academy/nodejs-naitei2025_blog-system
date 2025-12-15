@@ -12,7 +12,6 @@ import { Like, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { PASSWORD_SALT_ROUNDS } from 'src/common/constants/user.constant';
 import { JwtService } from '@nestjs/jwt';
-import { IUser } from 'src/common/interfaces/user.interface';
 import { plainToInstance } from 'class-transformer';
 
 @Injectable()
@@ -86,7 +85,7 @@ export class UserService {
 
     const result = await this.userRepository.findOne({
       where: { id },
-      relations: ['following', 'followers'],
+      relations: ['following', 'followers', 'favoritedArticles', 'articles'],
     });
     if (!result) {
       throw new NotFoundException('User not found', {
@@ -95,32 +94,6 @@ export class UserService {
     }
 
     return result;
-  }
-
-  async findByIdWithArticleCount(
-    id: number,
-  ): Promise<UserEntity & { articleCount: number }> {
-    if (isNaN(id)) {
-      throw new BadRequestException('Invalid user ID', {
-        description: 'User ID must be a number',
-      });
-    }
-
-    const user = await this.userRepository
-      .createQueryBuilder('user')
-      .leftJoinAndSelect('user.following', 'following')
-      .leftJoinAndSelect('user.followers', 'followers')
-      .loadRelationCountAndMap('user.articleCount', 'user.articles')
-      .where('user.id = :id', { id })
-      .getOne();
-
-    if (!user) {
-      throw new NotFoundException('User not found', {
-        description: `No user found with ID ${id}`,
-      });
-    }
-
-    return user as UserEntity & { articleCount: number };
   }
 
   async findByEmail(email: string) {
@@ -275,21 +248,6 @@ export class UserService {
     return user.following;
   }
 
-  async countFollowers(userId: number) {
-    const user = await this.findById(userId);
-    return user.followers.length;
-  }
-
-  async countFollowing(userId: number) {
-    const user = await this.findById(userId);
-    return user.following.length;
-  }
-
-  async countArticles(userId: number) {
-    const user = await this.findById(userId);
-    return user.articles.length;
-  }
-
   async listUsers(options: {
     page?: number;
     limit?: number;
@@ -298,34 +256,32 @@ export class UserService {
   }) {
     const page = options.page && options.page > 0 ? options.page : 1;
     const limit = options.limit && options.limit > 0 ? options.limit : 10;
-    const where: any = {};
+
+    const queryBuilder = this.userRepository.createQueryBuilder('user');
+
     if (options.username) {
-      where.username = Like(`%${options.username}%`);
+      queryBuilder.andWhere('user.username LIKE :username', {
+        username: `%${options.username}%`,
+      });
     }
     if (options.email) {
-      where.email = Like(`%${options.email}%`);
+      queryBuilder.andWhere('user.email LIKE :email', {
+        email: `%${options.email}%`,
+      });
     }
 
-    const [data, total] = await this.userRepository.findAndCount({
-      where,
-      skip: (page - 1) * limit,
-      take: limit,
-      order: { id: 'ASC' },
-    });
+    // Tối ưu: Đếm số lượng relation bằng subquery trong 1 lần gọi DB
+    queryBuilder
+      .skip((page - 1) * limit)
+      .take(limit)
+      .orderBy('user.id', 'ASC');
 
-    const users = await Promise.all(
-      data.map(async (user) => ({
-        ...user,
-        followingCount: await this.countFollowing(user.id),
-        followersCount: await this.countFollowers(user.id),
-        // articlesCount: await this.countArticles(user.id),
-      })),
-    );
+    const [users, total] = await queryBuilder.getManyAndCount();
 
     const totalPages = Math.ceil(total / limit);
 
     return {
-      users,
+      items: users,
       pagination: {
         page,
         limit,

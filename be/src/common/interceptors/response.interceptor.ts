@@ -8,9 +8,10 @@ import { IApiResponse } from '../interfaces/IApiResponse';
 import { map, Observable } from 'rxjs';
 
 @Injectable()
-export class TransformInterceptor<T>
-  implements NestInterceptor<T, IApiResponse<T>>
-{
+export class TransformInterceptor<T> implements NestInterceptor<
+  T,
+  IApiResponse<T>
+> {
   private getDefaultMessage(method: string) {
     switch (method) {
       case 'GET':
