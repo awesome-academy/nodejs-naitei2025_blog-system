@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, IsNull } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { CommentEntity } from './entities/comment.entity';
 import { ArticleEntity } from '../article/entities/article.entity';
 import { UserEntity } from '../user/entities/user.entity';
@@ -57,7 +57,17 @@ export class CommentService {
       );
     }
 
-    return savedComment;
+    // QUAN TRỌNG: Load lại comment để lấy đầy đủ thông tin author và timestamps chính xác
+    const fullComment = await this.commentRepository.findOne({
+      where: { id: savedComment.id },
+      relations: ['author'],
+    });
+
+    if (!fullComment) {
+      throw new NotFoundException('Không tìm thấy bình luận vừa tạo');
+    }
+
+    return fullComment;
   }
 
   async createReply(
@@ -80,6 +90,7 @@ export class CommentService {
 
       let newComment: CommentEntity;
 
+      // Logic xử lý độ sâu comment (Max depth = 2)
       if (parentComment.depth < 2) {
         newComment = commentRepo.create({
           body: createCommentDto.body,
@@ -93,12 +104,11 @@ export class CommentService {
         parentComment.replyCount += 1;
         await commentRepo.save(parentComment);
       } else {
+        // Nếu đã quá sâu, gán vào ông nội (Grandparent)
         const grandParent = parentComment.parentComment;
 
         if (!grandParent) {
-          throw new BadRequestException(
-            'Không thể tạo reply cho comment này',
-          );
+          throw new BadRequestException('Không thể tạo reply cho comment này');
         }
 
         const grandParentComment = await commentRepo.findOne({
@@ -116,7 +126,7 @@ export class CommentService {
           replyCount: 0,
           author: user,
           article: parentComment.article,
-          parentComment: grandParentComment,
+          parentComment: grandParentComment, // Gán parent là ông nội
         });
 
         grandParentComment.replyCount += 1;
@@ -134,7 +144,17 @@ export class CommentService {
         );
       }
 
-      return savedReply;
+      // QUAN TRỌNG: Load lại để lấy author và parentComment (để DTO map được parentId)
+      const fullReply = await commentRepo.findOne({
+        where: { id: savedReply.id },
+        relations: ['author', 'parentComment'],
+      });
+
+      if (!fullReply) {
+        throw new NotFoundException('Không tìm thấy phản hồi vừa tạo');
+      }
+
+      return fullReply;
     });
   }
 
@@ -246,7 +266,7 @@ export class CommentService {
     });
 
     if (!parentComment) {
-      throw new NotFoundException('Bình luận không tồn tại');
+      throw new NotFoundException('Comment not found');
     }
 
     const queryBuilder = this.commentRepository
@@ -354,7 +374,6 @@ export class CommentService {
         }
       }
 
-      // Xóa comment (cascade sẽ xóa tất cả replies)
       await commentRepo.remove(comment);
     });
   }

@@ -17,9 +17,10 @@ export class AuthService {
     const accessToken = await this.jwtService.signAsync({
       id,
       username: user.username,
+      role: user.role,
     });
 
-    const result = plainToInstance(UserEntity, { ...user, token: accessToken });
+    const result = { ...user, token: accessToken };
 
     return result;
   }

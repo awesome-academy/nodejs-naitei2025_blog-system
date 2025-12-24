@@ -22,9 +22,9 @@ export class ArticleListItemDto {
   @Expose()
   reading_time: number;
   @Expose()
-  favoritesCount: number;
+  favorites_count: number;
   @Expose()
-  commentCount: number;
+  comments_count: number;
   @Expose()
   @Transform(({ value }) => {
     if (!Array.isArray(value)) return [];
@@ -32,12 +32,14 @@ export class ArticleListItemDto {
   })
   tagList: TagEntity[];
   @Expose()
-  createdAt: Date;
+  created_at: Date;
   @Expose()
-  updatedAt: Date;
+  updated_at: Date;
   @Expose()
   @Type(() => UserBasicDto)
   author: UserBasicDto;
+  @Expose()
+  favorited: boolean;
 }
 
 export class ArticleDetailDto extends ArticleListItemDto {
@@ -46,8 +48,7 @@ export class ArticleDetailDto extends ArticleListItemDto {
   @Expose()
   @Type(() => CommentResponseDto)
   comments: CommentResponseDto[];
-  @Expose()
-  favorited: boolean;
+
   @Expose()
   @Type(() => UserBasicDto)
   favoritedBy: UserBasicDto[];

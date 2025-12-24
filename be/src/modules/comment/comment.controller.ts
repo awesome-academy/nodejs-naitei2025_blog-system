@@ -116,7 +116,10 @@ export class CommentController {
 
   @UseGuards(JwtGuard)
   @Delete(':commentId')
-  async deleteComment(@Param('commentId', ParseIntPipe) commentId: number, @Req() req) {
+  async deleteComment(
+    @Param('commentId', ParseIntPipe) commentId: number,
+    @Req() req,
+  ) {
     const user = req.user;
     await this.commentService.deleteComment(commentId, user);
 

@@ -1,0 +1,19 @@
+{
+    "sqltools.connections": [
+        {
+            "mysqlOptions": {
+                "authProtocol": "default",
+                "enableSsl": "Disabled"
+            },
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "turntable.proxy.rlwy.net",
+            "port": 34713,
+            "driver": "MySQL",
+            "name": "blog-website-db",
+            "username": "root",
+            "password": "ocQnHboXLTnXdNkjoFnKnJHnWzDaOgjL",
+            "database": "railway"
+        }
+    ]
+}

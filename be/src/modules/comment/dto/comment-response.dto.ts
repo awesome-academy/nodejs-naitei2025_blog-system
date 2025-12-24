@@ -32,7 +32,7 @@ export class CommentResponseDto {
   author: AuthorResponseDto;
 
   @Expose()
-  @Transform(({ obj }) => obj.parentComment?.id || null)
+  @Transform(({ obj }) => (obj.parentComment?.id as number) || null)
   parentId: number | null;
 
   @Expose()
@@ -63,4 +63,3 @@ export class CommentListResponseDto {
   @Expose()
   nextCursor: number | null;
 }
-

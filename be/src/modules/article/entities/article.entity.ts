@@ -52,8 +52,14 @@ export class ArticleEntity extends BaseEntity {
   @Transform(({ value }) => value.map((tag: TagEntity) => tag.name) as string[])
   tagList: TagEntity[];
 
-  @OneToMany(() => CommentEntity, (comment) => comment.article)
+  @OneToMany(() => CommentEntity, (comment) => comment.article, { eager: true })
   comments: CommentEntity[];
+
+  @VirtualColumn({
+    query: (alias) =>
+      `(SELECT COUNT(*) FROM comments WHERE articleId = ${alias}.id)`,
+  })
+  comments_count: number;
 
   @ManyToOne(() => UserEntity, (user) => user.articles, {
     eager: true,
@@ -74,7 +80,7 @@ export class ArticleEntity extends BaseEntity {
     query: (alias) =>
       `(SELECT COUNT(*) FROM user_favorite_articles ufa WHERE ufa.article_id = ${alias}.id)`,
   })
-  favoritesCount: number;
+  favorites_count: number;
 
   @DeleteDateColumn({ name: 'deleted_at', nullable: true })
   deletedAt?: Date;

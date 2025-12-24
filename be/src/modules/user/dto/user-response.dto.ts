@@ -22,7 +22,7 @@ export class UserListItemDto extends UserBasicDto {
   @Expose()
   articlesCount: number;
   @Expose()
-  createdAt: Date;
+  created_at: Date;
   @Expose()
   role: 'USER' | 'ADMIN';
 }

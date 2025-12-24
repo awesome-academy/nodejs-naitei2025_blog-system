@@ -1,4 +1,12 @@
-import { IsArray, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsArray,
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
+import { ArticleStatus } from 'src/common/class/enum/article.enum';
 import {
   ARTICLE_BODY_MAX_LENGTH,
   ARTICLE_COVER_IMAGE_MAX_LENGTH,
@@ -36,4 +44,10 @@ export class CreateArticleDto {
   @IsArray({ message: 'Tag list must be an array of strings' })
   @IsString({ each: true, message: 'Each tag must be a string' })
   tagList?: string[];
+
+  @IsNotEmpty({ message: 'Status is required' })
+  @IsIn(['draft', 'pending'], {
+    message: 'Status must be either draft or pending',
+  })
+  status: ArticleStatus;
 }

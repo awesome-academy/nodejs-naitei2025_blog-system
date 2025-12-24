@@ -24,4 +24,3 @@ export class GetCommentsQueryDto {
   @IsNumber()
   afterId?: number;
 }
-

@@ -29,7 +29,7 @@ import { DashboardSidebarButton } from "@/types/dashboard-sidebar-button.type";
 const items: DashboardSidebarButton[] = [
   {
     title: "Tổng quan",
-    url: "/dashboard",
+    url: "dashboard",
     icon: LayoutDashboard,
   },
   {
@@ -52,7 +52,7 @@ const items: DashboardSidebarButton[] = [
 export function DashboardSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
-  const path = usePathname().replace("/admin", "") || "/dashboard";
+  const path = usePathname().replace("/admin/", "") || "dashboard";
   return (
     <Sidebar {...props}>
       <SidebarHeader>

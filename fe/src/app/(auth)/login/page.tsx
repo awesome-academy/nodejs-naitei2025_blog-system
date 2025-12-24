@@ -10,10 +10,50 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
+import * as z from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import http from "@/lib/http";
+import authApi from "@/api/auth.api";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/useAuth";
+
+const schema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 8 characters"),
+});
 
 const LoginPage = ({ className, ...props }: React.ComponentProps<"form">) => {
+  const router = useRouter();
+  const { user, setUser } = useAuth();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: zodResolver(schema),
+  });
+
+  const onSubmit = async (data: any) => {
+    try {
+      const response = await authApi.login(data);
+      if(response.success && response.data){
+        await authApi.auth({ token: response.data.token });
+        setUser(response.data);
+        router.push("/profile/me");
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
+  };
+
   return (
-    <form className={cn("p-6 md:p-8", className)} {...props}>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className={cn("p-6 md:p-8", className)}
+      {...props}
+    >
       <FieldGroup>
         <div className="flex flex-col items-center gap-2 text-center">
           <h1 className="text-2xl font-bold">Chào mừng trở lại</h1>
@@ -25,10 +65,16 @@ const LoginPage = ({ className, ...props }: React.ComponentProps<"form">) => {
           <FieldLabel htmlFor="email">Địa chỉ email</FieldLabel>
           <Input
             id="email"
-            type="email"
+            type="text"
             placeholder="Nhập email của bạn"
             required
+            {...register("email")}
           />
+          {errors.email && (
+            <FieldDescription className="text-red-500">
+              {errors.email.message}
+            </FieldDescription>
+          )}
         </Field>
         <Field>
           <div className="flex items-center">
@@ -45,7 +91,13 @@ const LoginPage = ({ className, ...props }: React.ComponentProps<"form">) => {
             type="password"
             placeholder="Nhập mật khẩu của bạn"
             required
+            {...register("password")}
           />
+          {errors.password && (
+            <FieldDescription className="text-red-500">
+              {errors.password.message}
+            </FieldDescription>
+          )}
         </Field>
         <Field>
           <Button type="submit">Đăng nhập</Button>

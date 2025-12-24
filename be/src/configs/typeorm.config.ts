@@ -16,6 +16,6 @@ export const typeORMConfig = (
     entities: [join(__dirname, '..', '**', '*.entity.{js,ts}')],
     migrations: ['dist/migrations/*.js'],
     migrationsRun: true,
-    synchronize: true,
+    synchronize: false,
   };
 };
