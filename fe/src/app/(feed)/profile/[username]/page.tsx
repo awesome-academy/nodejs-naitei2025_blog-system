@@ -5,6 +5,7 @@ import userApi from "@/api/user.api";
 import PostList from "@/components/PostList";
 import { ArticleListItem } from "@/interfaces/article.interface";
 import { UserDetail } from "@/interfaces/user.interface";
+import articleApi from "@/api/article.api";
 
 export default async function Page({
   params,
@@ -48,18 +49,30 @@ export default async function Page({
 
   // 3. Phân loại bài viết an toàn (Safe Destructuring)
   // Dùng toán tử ?. và ?? [] để tránh lỗi nếu articles null
-  const articles = user.articles ?? [];
+  const response = await articleApi.getArticleByAuthor(user.username, 100, 0, token);
+  if (!response.success || !response.data) {
+    return <div className="p-4 text-red-500">Lỗi tải bài viết.</div>;
+  }
+  const articles: ArticleListItem[] = response.data.items;
 
   const drafts = articles.filter((a) => a.status === "draft");
   const published = articles.filter((a) => a.status === "published");
   const pendings = articles.filter((a) => a.status === "pending");
-  const favorited = user.favouritedArticles ?? [];
+  let favorited: ArticleListItem[] = [];
+  const favoritedResponse = await articleApi.getArticleByFavorited(
+    user.username,
+    100,
+    0,
+    token
+  );
+  if (favoritedResponse.success && favoritedResponse.data) {
+    favorited = favoritedResponse.data.items;
+  }
 
   // 4. Xác định xem đây có phải là profile của chính người đang xem không
   // username === 'me' HOẶC username trên url trùng với username trong data trả về (trường hợp user đã login xem profile của chính mình qua url public)
   // Lưu ý: Logic này tương đối, tốt nhất API getProfile nên trả về trường `isOwner`
-  const isOwnProfile =
-    username === "me" || (token && user.username === username); // Cần logic so sánh chuẩn xác hơn nếu có thông tin currentUser
+  const isOwnProfile = username === "me"; // Cần logic so sánh chuẩn xác hơn nếu có thông tin currentUser
 
   return (
     <div className="container mx-auto py-6">

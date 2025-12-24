@@ -16,9 +16,9 @@ import { Separator } from "@/components/ui/separator";
 import { ArticleListItem } from "@/interfaces/article.interface";
 import { Clock, Eye, MessageSquare } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 const DashboardDetailModal = ({ item }: { item: ArticleListItem }) => {
-  
   return (
     <Dialog>
       <DialogTrigger asChild>
@@ -86,7 +86,9 @@ const DashboardDetailModal = ({ item }: { item: ArticleListItem }) => {
               {item.reading_time} phút đọc
             </div>
           </div>
-          <Button variant="default">Xem bài viết</Button>
+          <Link href={`/articles/${item.slug}`}>
+            <Button variant="default">Xem bài viết</Button>
+          </Link>
         </DialogFooter>
       </DialogContent>
     </Dialog>

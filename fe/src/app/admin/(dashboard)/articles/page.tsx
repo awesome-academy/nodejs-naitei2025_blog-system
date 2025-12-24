@@ -157,7 +157,6 @@ export default function Page() {
   useEffect(() => {
     const fetchArticles = async () => {
       const response = await articleApi.getArticles({});
-      console.log(response);
       if (response.data.items) {
         setArticles(response.data.items);
         setIsLoading(false);

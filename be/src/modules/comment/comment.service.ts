@@ -12,6 +12,7 @@ import { UserEntity } from '../user/entities/user.entity';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
 import { GetCommentsQueryDto } from './dto/get-comments-query.dto';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class CommentService {
@@ -21,6 +22,7 @@ export class CommentService {
     @InjectRepository(ArticleEntity)
     private readonly articleRepository: Repository<ArticleEntity>,
     private readonly dataSource: DataSource,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async createComment(
@@ -30,6 +32,7 @@ export class CommentService {
   ): Promise<CommentEntity> {
     const article = await this.articleRepository.findOne({
       where: { slug },
+      relations: ['author'],
     });
 
     if (!article) {
@@ -45,6 +48,14 @@ export class CommentService {
     });
 
     const savedComment = await this.commentRepository.save(comment);
+
+    //Tạo Notifications khi có người bình luận bài viết
+    if (article.author.id !== user.id) {
+      await this.notificationService.createCommentNotification(
+        savedComment,
+        article,
+      );
+    }
 
     // QUAN TRỌNG: Load lại comment để lấy đầy đủ thông tin author và timestamps chính xác
     const fullComment = await this.commentRepository.findOne({
@@ -123,6 +134,15 @@ export class CommentService {
       }
 
       const savedReply = await commentRepo.save(newComment);
+
+      //Tạo Notifications khi có người reply comment
+      if (parentComment.author.id !== user.id) {
+        await this.notificationService.createReplyNotification(
+          savedReply,
+          parentComment,
+          parentComment.article,
+        );
+      }
 
       // QUAN TRỌNG: Load lại để lấy author và parentComment (để DTO map được parentId)
       const fullReply = await commentRepo.findOne({

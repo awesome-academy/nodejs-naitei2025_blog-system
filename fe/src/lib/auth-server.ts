@@ -16,11 +16,10 @@ export const getAuthServer = async () => {
         return null;
       }
       const payload = await res.json();
-      const { username, name, email, image, role } = payload.data;
-      return { username, name, email, image, token, role };
+      return { ...payload.data, token }; // Trả về cả token để tiện sử dụng sau này
     })
     .catch(() => {
-        return null;
+      return null;
     }); // Trả về null nếu có lỗi (ví dụ: không đăng nhập)
   return user;
 };

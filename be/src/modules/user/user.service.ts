@@ -1,6 +1,8 @@
 import {
   BadRequestException,
   ConflictException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -13,6 +15,7 @@ import * as bcrypt from 'bcrypt';
 import { PASSWORD_SALT_ROUNDS } from 'src/common/constants/user.constant';
 import { JwtService } from '@nestjs/jwt';
 import { plainToInstance } from 'class-transformer';
+import { NotificationService } from '../notification/notification.service';
 
 @Injectable()
 export class UserService {
@@ -20,6 +23,8 @@ export class UserService {
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
     private readonly jwtService: JwtService,
+    @Inject(forwardRef(() => NotificationService))
+    private readonly notificationService: NotificationService,
   ) {}
 
   async hashPassword(password: string): Promise<string> {
@@ -215,6 +220,10 @@ export class UserService {
 
     user.following.push(targetUser);
     await this.userRepository.save(user);
+
+    // Tao Notification khi có người follow
+    await this.notificationService.createFollowNotification(user, targetUser);
+
     const result = {
       ...targetUser,
       isFollowing: true,

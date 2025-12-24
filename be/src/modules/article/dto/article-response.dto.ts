@@ -38,6 +38,8 @@ export class ArticleListItemDto {
   @Expose()
   @Type(() => UserBasicDto)
   author: UserBasicDto;
+  @Expose()
+  favorited: boolean;
 }
 
 export class ArticleDetailDto extends ArticleListItemDto {
@@ -46,8 +48,7 @@ export class ArticleDetailDto extends ArticleListItemDto {
   @Expose()
   @Type(() => CommentResponseDto)
   comments: CommentResponseDto[];
-  @Expose()
-  favorited: boolean;
+
   @Expose()
   @Type(() => UserBasicDto)
   favoritedBy: UserBasicDto[];

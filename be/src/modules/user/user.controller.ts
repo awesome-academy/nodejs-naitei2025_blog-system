@@ -42,7 +42,7 @@ export class UserController {
   }
 
   @UseGuards(JwtGuard)
-  @Serialize(UserDetailDto)
+  @Serialize(UserListItemDto)
   @Get()
   async getCurrentUser(@Req() req: any) {
     const { id } = req.user as IJwtPayload;

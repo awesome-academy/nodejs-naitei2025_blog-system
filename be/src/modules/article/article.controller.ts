@@ -41,9 +41,14 @@ export class ArticleController {
 
   @Get()
   @Serialize(ArticleListItemDto)
-  async findMany(@Query() findManyArticlesQueryDto: FindManyArticlesQueryDto) {
+  async findMany(
+    @Query() findManyArticlesQueryDto: FindManyArticlesQueryDto,
+    @Req() req,
+  ) {
+    const userId = req.user?.id || undefined;
     const articles = await this.articleService.findMany(
       findManyArticlesQueryDto,
+      userId,
     );
 
     if (!articles.articlesCount) {
@@ -70,8 +75,12 @@ export class ArticleController {
 
   @Get(':slug')
   @Serialize(ArticleDetailDto)
-  async findBySlug(@Param('slug') slug: string) {
-    const article = await this.articleService.findBySlug(slug);
+  async findBySlug(@Param('slug') slug: string, @Req() req) {
+    // Lấy ID nếu có (nếu route này public thì req.user có thể null)
+    // Bạn cần đảm bảo Middleware giải mã token chạy trước route này (dù không bắt buộc login)
+    const userId = req.user?.id;
+
+    const article = await this.articleService.findBySlug(slug, userId);
 
     return { message: 'Article found successfully', data: article };
   }

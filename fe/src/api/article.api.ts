@@ -1,10 +1,49 @@
-import { ArticleDetail } from "@/interfaces/article.interface";
+import { ArticleDetail, ArticleListItem } from "@/interfaces/article.interface";
 import http from "@/lib/http";
 import { time } from "console";
 
 const articleApi = {
   getArticles: (params: any) => http.get("/articles"),
-  getArticleBySlug: (slug: string) => http.get<ArticleDetail>(`/articles/${slug}`),
+  getArticleBySlug: (slug: string) =>
+    http.get<ArticleDetail>(`/articles/${slug}`),
+  getArticleByAuthor: (
+    username: string,
+    limit?: number,
+    offset?: number,
+    token?: string
+  ) =>
+    http.get<ArticleListItem[]>(
+      `/articles?author=${username}${limit ? `&limit=${limit}` : ""}${
+        offset ? `&offset=${offset}` : ""
+      }`,
+      {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      }
+    ),
+  getArticleByTag: (tag: string, limit?: number, offset?: number, token?: string) =>
+    http.get<ArticleListItem[]>(
+      `/articles?tag=${tag}${limit ? `&limit=${limit}` : ""}${
+        offset ? `&offset=${offset}` : ""
+      }`,
+      {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      }
+    ),
+  getArticleByFavorited: (username: string, limit?: number, offset?: number, token?: string) =>
+    http.get<ArticleListItem[]>(
+      `/articles?favorited=${username}${limit ? `&limit=${limit}` : ""}${
+        offset ? `&offset=${offset}` : ""
+      }`,
+      {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      }
+    ),
   approveArticle: (slug: string, token: string) =>
     http.put(`/articles/${slug}/approve`, null, {
       headers: {
@@ -65,6 +104,30 @@ const articleApi = {
         },
       }
     ),
+  removeArticle: (slug: string, token: string) =>
+    http.delete(`/articles/${slug}`, null, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }),
+  updateArticle: (slug: string, token: string, payload: any) =>
+    http.put(`/articles/${slug}`, payload, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }),
+  favoriteArticle: (slug: string, token: string) =>
+    http.post(`/articles/${slug}/favorite`, null, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }),
+  unfavoriteArticle: (slug: string, token: string) =>
+    http.delete(`/articles/${slug}/favorite`, null, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }),
 };
 
 export default articleApi;

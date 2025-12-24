@@ -1,3 +1,4 @@
+import { AvatarFallback, AvatarImage, Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { ArticleListItem } from "@/interfaces/article.interface";
 import { Clock, Eye, MessageSquare } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 
 const ArticleDetailModal = ({ item }: { item: ArticleListItem }) => {
   const getStatusBadge = (status: string) => {
@@ -42,21 +44,16 @@ const ArticleDetailModal = ({ item }: { item: ArticleListItem }) => {
       </DialogTrigger>
       <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>
-            {statusBadge}
-          </DialogTitle>
+          <DialogTitle>{statusBadge}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4">
           <div className="grid gap-3">
             <div className="text-3xl font-bold">{item.title}</div>
             <div className="flex gap-2">
-              <Image
-                src={item.author.avatar || "/user_default.jpg"}
-                alt={"avatar"}
-                width={50}
-                height={50}
-                className="rounded-md object-cover"
-              />
+              <Avatar className="h-12 w-12 border-2 border-background shadow-sm">
+              <AvatarImage src={item.author.image} />
+              <AvatarFallback>{item.author.name}</AvatarFallback>
+            </Avatar>
               <div className="flex items-center">{item.author.name}</div>
             </div>
           </div>
@@ -100,7 +97,9 @@ const ArticleDetailModal = ({ item }: { item: ArticleListItem }) => {
               {item.reading_time} phút đọc
             </div>
           </div>
-          <Button variant="default">Xem bài viết</Button>
+          <Link href={`/articles/${item.slug}`}>
+            <Button variant="default">Xem bài viết</Button>
+          </Link>
         </DialogFooter>
       </DialogContent>
     </Dialog>

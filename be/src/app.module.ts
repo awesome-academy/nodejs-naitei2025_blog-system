@@ -21,6 +21,7 @@ import { ArticleModule } from './modules/article/article.module';
 import { AuthMiddleware } from './common/middlewares/auth.middleware';
 import { TagModule } from './modules/tag/tag.module';
 import { CommentModule } from './modules/comment/comment.module';
+import { NotificationModule } from './modules/notification/notification.module';
 
 @Module({
   imports: [
@@ -55,7 +56,8 @@ import { CommentModule } from './modules/comment/comment.module';
     AuthModule,
     ArticleModule,
     TagModule,
-    CommentModule
+    CommentModule,
+    NotificationModule
   ],
   controllers: [AppController],
   providers: [AppService],

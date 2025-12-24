@@ -1,7 +1,19 @@
-import { UserDetail, UserListItem } from "@/interfaces/user.interface";
+import {
+  CreateUser,
+  UserBasic,
+  UserDetail,
+  UserListItem,
+} from "@/interfaces/user.interface";
 import http from "@/lib/http";
 
 const userApi = {
+  countUser: (token: string) =>
+    http.get<{ total: number }>("/user/count", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }),
+  createUser: (payload) => http.post<CreateUser>("/user/user", payload),
   getUsers: (token: string) =>
     http.get<UserListItem[]>("/user/all", {
       headers: {
@@ -79,6 +91,26 @@ const userApi = {
     http.put<UserDetail>(
       "/user",
       { ...payload },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    ),
+  followUser: (token: string, username: string) =>
+    http.post<UserBasic>(
+      `/profiles/${username}/follow`,
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    ),
+  unfollowUser: (token: string, username: string) =>
+    http.post<UserBasic>(
+      `/profiles/${username}/unfollow`,
+      {},
       {
         headers: {
           Authorization: `Bearer ${token}`,

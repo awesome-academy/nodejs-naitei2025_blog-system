@@ -31,7 +31,7 @@ export class CommentEntity extends BaseEntity {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'parentId' })
-  parentComment: CommentEntity;
+  parentComment: CommentEntity | null;
 
   @OneToMany(() => CommentEntity, (comment) => comment.parentComment)
   replies: CommentEntity[];

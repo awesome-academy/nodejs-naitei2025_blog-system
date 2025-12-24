@@ -6,13 +6,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from '../user/user.module';
 import { TagModule } from '../tag/tag.module';
 import { CommentModule } from '../comment/comment.module';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([ArticleEntity]),
     UserModule,
     TagModule,
-    // CommentModule,
+    NotificationModule,
   ],
   controllers: [ArticleController],
   providers: [ArticleService],

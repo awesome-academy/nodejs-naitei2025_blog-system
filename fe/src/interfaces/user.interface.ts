@@ -10,6 +10,13 @@ export interface UserListItem extends UserBasic {
   created_at: string;
 }
 
+export interface CreateUser {
+  name: string;
+  username: string;
+  email: string;
+  password: string;
+}
+
 export interface UserBasic {
   name: string;
   username: string;

@@ -118,7 +118,7 @@ const CommentNode = ({
           <div className="flex gap-3">
             <Avatar className="h-8 w-8">
               <AvatarImage src={comment.author.image} />
-              <AvatarFallback>{comment.author.username[0].toUpperCase()}</AvatarFallback>
+              <AvatarFallback>{comment.author.name}</AvatarFallback>
             </Avatar>
             <div className="flex-1 space-y-1">
               <div className="flex items-center justify-between">
@@ -278,10 +278,10 @@ export default function ArticleView({ initialArticle }: ArticleViewProps) {
           <div className="flex items-center gap-3">
             <Avatar className="h-12 w-12 border-2 border-background shadow-sm">
               <AvatarImage src={article.author.image} />
-              <AvatarFallback>{article.author.username[0]}</AvatarFallback>
+              <AvatarFallback>{article.author.name}</AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-semibold text-sm">{article.author.username}</p>
+              <p className="font-semibold text-sm">{article.author.name}</p>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <span>{formatDate(article.created_at)}</span>
                 <span>•</span>

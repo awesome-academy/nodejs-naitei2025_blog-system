@@ -16,6 +16,7 @@ export interface ArticleListItem {
     comments_count: number;
     author: UserBasic;
     favorites_count: number;
+    favorited: boolean;
 }
 
 export interface ArticleDetail extends ArticleListItem {

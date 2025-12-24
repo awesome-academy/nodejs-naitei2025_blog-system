@@ -32,7 +32,6 @@ export class CommentController {
     @Req() req,
   ) {
     const user = req.user;
-    console.log('User creating comment:', user);
     const comment = await this.commentService.createComment(
       slug,
       createCommentDto,

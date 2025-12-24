@@ -1,4 +1,12 @@
 "use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -9,45 +17,152 @@ import {
   FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import Link from "next/link";
+import userApi from "@/api/user.api";
+
+// 1. Định nghĩa Schema Validation khớp với CreateUserDto
+const registerSchema = z
+  .object({
+    name: z
+      .string()
+      .min(1, "Tên không được để trống")
+      .max(50, "Tên tối đa 50 ký tự"),
+    username: z
+      .string()
+      .min(3, "Username tối thiểu 3 ký tự") // Giả định min length dựa trên DTO
+      .max(10, "Username quá dài"), // Giả định max length
+    email: z.string().email("Email không hợp lệ"),
+    password: z
+      .string()
+      .min(6, "Mật khẩu tối thiểu 6 ký tự")
+      .max(20, "Mật khẩu tối đa 20 ký tự"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Mật khẩu xác nhận không khớp",
+    path: ["confirmPassword"],
+  });
+
+// Tạo type từ schema
+type RegisterFormValues = z.infer<typeof registerSchema>;
 
 const RegisterPage = ({
   className,
   ...props
 }: React.ComponentProps<"form">) => {
+  const router = useRouter();
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  // 2. Setup React Hook Form
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: "",
+      username: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
+  });
+
+  // 3. Xử lý Submit
+  const onSubmit = async (data: RegisterFormValues) => {
+    setServerError(null);
+    try {
+      // Loại bỏ confirmPassword trước khi gửi lên API
+      const payload = {
+        name: data.name,
+        username: data.username,
+        email: data.email,
+        password: data.password,
+      };
+
+      const response = await userApi.createUser(payload);
+
+      if (response.success) {
+        alert("Đăng ký thành công! Vui lòng đăng nhập."); // Có thể thay bằng Toast
+        router.push("/login");
+      } else {
+        setServerError(response.error || "Đăng ký thất bại");
+      }
+    } catch (error: any) {
+      console.error("Register Error:", error);
+      setServerError(error.message || "Đã xảy ra lỗi hệ thống");
+    }
+  };
+
   return (
-    <form className={cn("p-6 md:p-8", className)} {...props}>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className={cn("p-6 md:p-8", className)}
+      {...props}
+    >
       <FieldGroup>
         <div className="flex flex-col items-center gap-2 text-center">
-          <h1 className="text-2xl font-bold">
-            Chào mừng
-          </h1>
+          <h1 className="text-2xl font-bold">Chào mừng</h1>
           <p className="text-muted-foreground text-balance">
             Tham gia cộng đồng và chia sẻ câu chuyện của bạn.
           </p>
         </div>
+
+        {/* Hiển thị lỗi từ Server nếu có */}
+        {serverError && (
+          <div className="p-3 text-sm text-red-500 bg-red-50 rounded-md border border-red-200 text-center">
+            {serverError}
+          </div>
+        )}
+
+        {/* Trường Name (Bắt buộc theo DTO) */}
+        <Field>
+          <FieldLabel htmlFor="name">Tên hiển thị</FieldLabel>
+          <Input
+            id="name"
+            type="text"
+            placeholder="Nhập tên của bạn (Max 20 ký tự)"
+            {...register("name")}
+          />
+          {errors.name && (
+            <p className="text-sm text-red-500 mt-1">{errors.name.message}</p>
+          )}
+        </Field>
+
+        {/* Trường Email */}
         <Field>
           <FieldLabel htmlFor="email">Địa chỉ email</FieldLabel>
           <Input
             id="email"
             type="email"
             placeholder="Nhập email của bạn"
-            required
+            {...register("email")}
           />
+          {errors.email && (
+            <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>
+          )}
           <FieldDescription>
-            Chúng tôi sẽ sử dụng email này để liên hệ với bạn. Chúng tôi sẽ
-            không chia sẻ email của bạn với bất kỳ ai khác.
+            Chúng tôi sẽ sử dụng email này để liên hệ với bạn.
           </FieldDescription>
         </Field>
+
+        {/* Trường Username */}
         <Field>
           <FieldLabel htmlFor="username">Username</FieldLabel>
           <Input
             id="username"
             type="text"
             placeholder="Nhập username của bạn"
-            required
+            {...register("username")}
           />
+          {errors.username && (
+            <p className="text-sm text-red-500 mt-1">
+              {errors.username.message}
+            </p>
+          )}
         </Field>
+
+        {/* Trường Password & Confirm Password */}
         <Field>
           <Field className="grid grid-cols-2 gap-4">
             <Field>
@@ -55,10 +170,14 @@ const RegisterPage = ({
               <Input
                 id="password"
                 type="password"
-                placeholder="Nhập mật khẩu của bạn"
-                minLength={8}
-                required
+                placeholder="Nhập mật khẩu"
+                {...register("password")}
               />
+              {errors.password && (
+                <p className="text-sm text-red-500 mt-1">
+                  {errors.password.message}
+                </p>
+              )}
             </Field>
             <Field>
               <FieldLabel htmlFor="confirm-password">
@@ -68,24 +187,35 @@ const RegisterPage = ({
                 id="confirm-password"
                 type="password"
                 placeholder="Nhập lại mật khẩu"
-                required
+                {...register("confirmPassword")}
               />
+              {errors.confirmPassword && (
+                <p className="text-sm text-red-500 mt-1">
+                  {errors.confirmPassword.message}
+                </p>
+              )}
             </Field>
           </Field>
           <FieldDescription>Mật khẩu phải có ít nhất 8 ký tự.</FieldDescription>
         </Field>
+
         <Field>
-          <Button type="submit">Đăng ký</Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Đang xử lý..." : "Đăng ký"}
+          </Button>
         </Field>
+
         <FieldSeparator className="*:data-[slot=field-separator-content]:bg-card">
           Hoặc tiếp tục với
         </FieldSeparator>
+
         <Field className="grid grid-cols-2 gap-4">
           <Button variant="outline" type="button">
             <svg
               role="img"
               viewBox="0 0 24 24"
               xmlns="http://www.w3.org/2000/svg"
+              className="w-5 h-5 mr-2"
             >
               <path
                 d="M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 0 1 1.141.195v3.325a8.623 8.623 0 0 0-.653-.036 26.805 26.805 0 0 0-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 0 0-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z"
@@ -95,7 +225,11 @@ const RegisterPage = ({
             <span className="sr-only">Đăng nhập với Facebook</span>
           </Button>
           <Button variant="outline" type="button">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              className="w-5 h-5 mr-2"
+            >
               <path
                 d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
                 fill="currentColor"
@@ -104,6 +238,7 @@ const RegisterPage = ({
             <span className="sr-only">Đăng nhập với Google</span>
           </Button>
         </Field>
+
         <FieldDescription className="text-center">
           Đã có tài khoản? <Link href="/login">Đăng nhập</Link>
         </FieldDescription>

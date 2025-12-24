@@ -29,7 +29,7 @@ export class UserEntity extends BaseEntity {
   @Column({ length: 200, default: '' })
   bio: string;
 
-  @Column({ length: 100, default: '' })
+  @Column({ length: 200, default: '' })
   image: string;
 
   @OneToMany(() => ArticleEntity, (article) => article.author)
