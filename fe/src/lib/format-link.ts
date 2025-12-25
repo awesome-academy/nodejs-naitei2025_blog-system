@@ -7,11 +7,11 @@ const getDraftArticleLink = (slug: string) => {
 }
 
 const getProfileLink = (username: string) => {
-  return `/profile/${username}`;
+  return `/profiles/${username}`;
 };
 
 const getTagLink = (tagName: string) => {
-  return `/tag/${tagName}`;
+  return `/?tag=${tagName}`;
 };
 
 export { getArticleLink, getDraftArticleLink, getProfileLink, getTagLink };

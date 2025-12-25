@@ -32,7 +32,7 @@ export default async function Page({
     } else {
       // 1. Sửa lỗi logic: Kiểm tra me tồn tại trước khi so sánh username
       if (me && username === me.username) {
-        redirect("/profile/me");
+        redirect("/profiles/me");
       }
 
       // 2. Gọi API lấy profile người khác
@@ -44,7 +44,14 @@ export default async function Page({
       }
     }
   } catch (error: any) {
-    // 3. Bắt lỗi 401 (Unauthorized) để không sập trang
+    // QUAN TRỌNG: Dòng này giúp Next.js hiểu đây là lệnh chuyển hướng, không phải lỗi
+    if (
+      error.message === "NEXT_REDIRECT" ||
+      error.digest?.startsWith("NEXT_REDIRECT")
+    ) {
+      throw error;
+    }
+
     console.error("Error fetching profile:", error);
     if (error?.status === 401 || error?.message === "Unauthorized") {
       redirect("/login");
@@ -61,7 +68,12 @@ export default async function Page({
   // Lấy danh sách bài viết (Cũng nên bọc try/catch nếu cần thiết)
   let articles: ArticleListItem[] = [];
   try {
-    const response = await articleApi.getArticleByAuthor(user.username, 100, 0, token);
+    const response = await articleApi.getArticleByAuthor(
+      user.username,
+      100,
+      0,
+      token
+    );
     if (response.success && response.data) {
       articles = response.data.items;
     }
@@ -72,21 +84,8 @@ export default async function Page({
   const drafts = articles.filter((a) => a.status === "draft");
   const published = articles.filter((a) => a.status === "published");
   const pendings = articles.filter((a) => a.status === "pending");
-  
-  let favorited: ArticleListItem[] = [];
-  try {
-    const favoritedResponse = await articleApi.getArticleByFavorited(
-        user.username,
-        100,
-        0,
-        token
-    );
-    if (favoritedResponse.success && favoritedResponse.data) {
-        favorited = favoritedResponse.data.items;
-    }
-  } catch (error) {
-      console.error("Lỗi tải bài yêu thích:", error);
-  }
+
+  const favorited: ArticleListItem[] = articles.filter((a) => a.favorited);
 
   const isOwnProfile = username === "me";
 

@@ -192,7 +192,7 @@ const Page = ({ params }: { params: Promise<{ slug: string }> }) => {
           router.push(`/articles/draft/${response.data.slug}`);
         }
       }
-      router.push("/profile/me");
+      router.push("/profiles/me");
     } catch (error) {
       console.error("Lỗi submit:", error);
       console.log(error.error);

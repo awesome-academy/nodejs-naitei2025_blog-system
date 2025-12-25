@@ -22,7 +22,7 @@ export default function ProfileSidebar({ user }) {
 
   // Logic kiểm tra xem có phải profile của chính mình không
   const isOwnProfile =
-    pathname.includes("/profile/me") || (me?.username === user.username);
+    pathname.includes("/profiles/me") || (me?.username === user.username);
 
   // State quản lý trạng thái follow (Khởi tạo từ prop user.following)
   // Giả định API getProfile trả về field 'following' (boolean)

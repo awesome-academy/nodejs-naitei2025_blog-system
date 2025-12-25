@@ -117,5 +117,11 @@ const userApi = {
         },
       }
     ),
+  getNotifications: (token: string) =>
+    http.get<any[]>("/notifications", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }),
 };
 export default userApi;
