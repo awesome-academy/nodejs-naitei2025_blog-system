@@ -59,7 +59,7 @@ export default function NavbarButtons({ user }) {
           </Link>
 
           {/* Nút Viết bài (Nổi bật) */}
-          <Link href="/articles/draft">
+          <Link href="/articles/draft/new">
             <Button className="gap-2">
               <PenLine className="h-4 w-4" />
               <span className="hidden sm:inline">Viết bài</span>
@@ -95,13 +95,15 @@ export default function NavbarButtons({ user }) {
         {/* Avatar User (Nếu đã login) - Placeholder */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative">
+            {/* Thêm rounded-full vào Button để hiệu ứng hover cũng tròn theo avatar */}
+            <Button variant="ghost" size="icon" className="relative rounded-full">
               <Image
-                src="/user_default.jpg"
+                src={`${user.image || "/user_default.jpg"}`}
                 alt="User Avatar"
                 width={32}
                 height={32}
-                className="rounded-full"
+                // Thêm: aspect-square (giữ tỉ lệ vuông), h-8 w-8 (cố định size)
+                className="rounded-full object-cover aspect-square h-8 w-8"
               />
             </Button>
           </DropdownMenuTrigger>

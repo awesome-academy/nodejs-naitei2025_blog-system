@@ -3,11 +3,11 @@
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import TextAlign from "@tiptap/extension-text-align";
-import Image from "@tiptap/extension-image"; // 1. Import Image extension
+import Image from "@tiptap/extension-image";
 import Toolbar from "./Toolbar";
-import { on } from "events";
+import { useEffect } from "react";
 
-const Editor = ({ onChange }) => {
+const Editor = ({ content, onChange }: { content: string; onChange: (content: string) => void }) => {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -25,16 +25,15 @@ const Editor = ({ onChange }) => {
       TextAlign.configure({
         types: ["heading", "paragraph"],
       }),
-      // 2. Cấu hình Image extension
       Image.configure({
         inline: true,
-        allowBase64: true, // Cho phép hiển thị ảnh base64 (tùy chọn)
+        allowBase64: true,
         HTMLAttributes: {
-          class: "rounded-lg max-w-full h-auto my-4 mx-auto", // Style mặc định cho ảnh
+          class: "rounded-lg max-w-full h-auto my-4 mx-auto",
         },
       }),
     ],
-    content: "<p>Hello World!</p>",
+    content: content,
     editorProps: {
       attributes: {
         class:
@@ -44,13 +43,20 @@ const Editor = ({ onChange }) => {
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
-    // Don't render immediately on the server to avoid SSR issues
     immediatelyRender: false,
   });
 
+  useEffect(() => {
+    if (editor && content) {
+      if (editor.getHTML() !== content) {
+        editor.commands.setContent(content);
+      }
+    }
+  }, [content, editor]);
+
   return (
     <>
-      <Toolbar editor={editor} />
+      <Toolbar editor={editor as any} />
       <EditorContent editor={editor} />
     </>
   );

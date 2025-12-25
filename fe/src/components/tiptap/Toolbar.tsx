@@ -1,8 +1,9 @@
-import { AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, Heading1, Heading2, Heading3, Highlighter, Italic, List, ListOrdered, Strikethrough, Trash2 } from "lucide-react"; // 1. Import Trash2
+import articleApi from "@/api/article.api"; // 1. Import API để upload ảnh
+import { AlignCenter, AlignJustify, AlignLeft, AlignRight, Bold, Heading2, Italic, List, ListOrdered, Loader2, Strikethrough, Trash2 } from "lucide-react";
 import { Toggle } from "../ui/toggle";
 import { Editor } from "@tiptap/react";
 import { Image as ImageIcon } from "lucide-react";
-import { useRef, ChangeEvent } from "react";
+import { useRef, ChangeEvent, useState } from "react"; // 2. Import useState
 
 export default function Toolbar({ editor }: { editor: Editor }) {
   if (!editor) {
@@ -10,6 +11,7 @@ export default function Toolbar({ editor }: { editor: Editor }) {
   }
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false); // 3. State quản lý trạng thái upload
 
   const options = [
     {
@@ -68,26 +70,34 @@ export default function Toolbar({ editor }: { editor: Editor }) {
     fileInputRef.current?.click();
   };
 
-  // 2. Cập nhật hàm xử lý file để hỗ trợ nhiều ảnh
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+  // 4. Cập nhật logic: Upload ảnh lấy URL thay vì dùng Base64
+  const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (files && files.length > 0) {
-      // Lặp qua từng file được chọn
-      Array.from(files).forEach((file) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const src = e.target?.result as string;
-          // Chèn ảnh vào vị trí con trỏ hiện tại
-          editor.chain().focus().setImage({ src }).run();
-        };
-        reader.readAsDataURL(file);
-      });
+      setIsUploading(true); // Bật trạng thái loading
+      try {
+        // Lặp qua từng file được chọn
+        for (const file of Array.from(files)) {
+            // Gọi API upload ảnh
+            const url = await articleApi.uploadImage(file);
+            
+            if (url) {
+                // Chèn ảnh vào editor bằng URL từ server
+                editor.chain().focus().setImage({ src: url }).run();
+            }
+        }
+      } catch (error) {
+        console.error("Lỗi upload ảnh:", error);
+        alert("Không thể tải ảnh lên. Vui lòng thử lại.");
+      } finally {
+        setIsUploading(false); // Tắt loading
+        if (fileInputRef.current) {
+            fileInputRef.current.value = ""; // Reset input
+        }
+      }
     }
-    
-    event.target.value = "";
   };
 
-  // 3. Hàm xóa ảnh đang được chọn
   const deleteSelectedImage = () => {
     if (editor.isActive('image')) {
         editor.chain().focus().deleteSelection().run();
@@ -95,7 +105,7 @@ export default function Toolbar({ editor }: { editor: Editor }) {
   };
 
   return (
-    <div className="rounded-md border p-2 flex gap-2 flex-wrap">
+    <div className="rounded-md border p-2 flex gap-2 flex-wrap items-center">
         {options.map((option, index) => (
             <Toggle
                 key={index}
@@ -109,17 +119,21 @@ export default function Toolbar({ editor }: { editor: Editor }) {
         
         <button
           onClick={handleImageClick}
-          className="p-2 rounded hover:bg-gray-100"
+          className="p-2 rounded hover:bg-gray-100 disabled:opacity-50"
           type="button"
           title="Thêm ảnh"
+          disabled={isUploading} // Disable nút khi đang upload
         >
-          <ImageIcon className="w-5 h-5" />
+          {isUploading ? (
+             <Loader2 className="w-5 h-5 animate-spin" />
+          ) : (
+             <ImageIcon className="w-5 h-5" />
+          )}
         </button>
 
-        {/* 4. Nút xóa ảnh (chỉ hiện hoặc active khi đang chọn ảnh) */}
         <button
             onClick={deleteSelectedImage}
-            disabled={!editor.isActive('image')} // Disable nếu không chọn ảnh
+            disabled={!editor.isActive('image')}
             className={`p-2 rounded ${editor.isActive('image') ? 'hover:bg-red-100 text-red-600' : 'text-gray-300 cursor-not-allowed'}`}
             type="button"
             title="Xóa ảnh đang chọn"
@@ -127,7 +141,6 @@ export default function Toolbar({ editor }: { editor: Editor }) {
             <Trash2 className="w-5 h-5" />
         </button>
 
-        {/* 5. Thêm thuộc tính multiple */}
         <input
           ref={fileInputRef}
           type="file"

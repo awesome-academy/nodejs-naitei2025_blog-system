@@ -12,4 +12,4 @@ export const passwordMaxLength = process.env.USER_PASSWORD_MAX_LENGTH
   : 20;
 
 export const BIO_MAX_LENGTH = 200;
-export const IMAGE_MAX_LENGTH = 100;
+export const IMAGE_MAX_LENGTH = 200;

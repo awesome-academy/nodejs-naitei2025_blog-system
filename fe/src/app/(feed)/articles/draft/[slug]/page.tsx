@@ -16,22 +16,42 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 
 const MAX_FILE_SIZE = 5000000; // 5MB
-const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
+const ACCEPTED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/jpg",
+  "image/png",
+  "image/webp",
+];
 
 // 1. Cập nhật Schema: Chấp nhận cả File (upload mới) và String (URL cũ)
 const schema = z.object({
   title: z.string().min(1, "Tiêu đề không được để trống"),
-  description: z.string().min(1, "Mô tả không được để trống").max(100),
-  body: z.string().min(1, "Nội dung không được để trống"),
+  description: z
+    .string()
+    .min(1, "Mô tả không được để trống")
+    .max(100, "Mô tả tối đa 100 ký tự"),
+  body: z
+    .string()
+    .min(1, "Nội dung không được để trống")
+    .max(50000, "Nội dung tối đa 50000 ký tự"),
   tagList: z.array(z.string()).max(5, "Tối đa 5 thẻ"),
-  cover_image: z.union([
-    z.instanceof(File, { message: "Ảnh không hợp lệ" })
-      .refine((file) => file.size <= MAX_FILE_SIZE, "Kích thước ảnh tối đa là 5MB.")
-      .refine((file) => ACCEPTED_IMAGE_TYPES.includes(file.type), "Định dạng không hỗ trợ."),
-    z.string(), // Chấp nhận URL string
-    z.null(),   // Chấp nhận null (xóa ảnh)
-    z.undefined()
-  ]).optional(),
+  cover_image: z
+    .union([
+      z
+        .instanceof(File, { message: "Ảnh không hợp lệ" })
+        .refine(
+          (file) => file.size <= MAX_FILE_SIZE,
+          "Kích thước ảnh tối đa là 5MB."
+        )
+        .refine(
+          (file) => ACCEPTED_IMAGE_TYPES.includes(file.type),
+          "Định dạng không hỗ trợ."
+        ),
+      z.string(), // Chấp nhận URL string
+      z.null(), // Chấp nhận null (xóa ảnh)
+      z.undefined(),
+    ])
+    .optional(),
 });
 
 const Page = ({ params }: { params: Promise<{ slug: string }> }) => {
@@ -65,7 +85,7 @@ const Page = ({ params }: { params: Promise<{ slug: string }> }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [tagList, settagList] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
-  
+
   const { user } = useAuth();
   const { token } = user || "";
 
@@ -88,14 +108,14 @@ const Page = ({ params }: { params: Promise<{ slug: string }> }) => {
 
           setEditorContent(article.body);
           settagList(article.tagList);
-          
+
           // QUAN TRỌNG: Nếu có ảnh cũ (string), set nó vào blob để hiển thị preview
           if (article.cover_image) {
             setBlob(article.cover_image);
           }
         } catch (error) {
           console.error("Lỗi tải bài viết:", error);
-          router.push("/articles/draft/new"); 
+          router.push("/articles/draft/new");
         } finally {
           setIsLoading(false);
         }
@@ -123,8 +143,9 @@ const Page = ({ params }: { params: Promise<{ slug: string }> }) => {
 
   const removeImage = () => {
     setFile(null);
-    setBlob(""); // Xóa preview
-    setValue("cover_image", null, { shouldValidate: true }); // Set form về null
+    setBlob("");
+    // QUAN TRỌNG: Set về null rõ ràng
+    setValue("cover_image", null, { shouldValidate: true, shouldDirty: true });
     if (inputFileRef.current) inputFileRef.current.value = "";
   };
 
@@ -133,12 +154,7 @@ const Page = ({ params }: { params: Promise<{ slug: string }> }) => {
     setIsLoading(true);
     try {
       let coverImageUrl = data.cover_image;
-      
-      // Logic quan trọng:
-      // 1. Nếu là File -> Upload lên Cloudinary lấy URL mới
-      // 2. Nếu là String -> Giữ nguyên URL cũ
-      // 3. Nếu là null -> Gửi null lên server (để xóa ảnh)
-      
+
       if (data.cover_image instanceof File) {
         const url = await articleApi.uploadImage(data.cover_image);
         if (url) {
@@ -148,14 +164,19 @@ const Page = ({ params }: { params: Promise<{ slug: string }> }) => {
         }
       }
 
+      // Kiểm tra kỹ: Nếu data.cover_image là null (do đã xóa), payload phải gửi null
+      // Nếu data.cover_image là string (URL cũ), payload gửi string đó
+
       const payload = {
         title: data.title,
         description: data.description,
         body: data.body,
         tagList: data.tagList,
-        cover_image: coverImageUrl, // Lúc này chắc chắn là String hoặc Null
+        cover_image: coverImageUrl,
         status: status,
       };
+
+      console.log("Payload sending:", payload); // Debug: Xem log xem cover_image có phải là null không
 
       let response;
       if (isCreateMode) {
@@ -168,12 +189,14 @@ const Page = ({ params }: { params: Promise<{ slug: string }> }) => {
         const actionText = status === "draft" ? "Lưu bản nháp" : "Đăng bài";
         alert(`${actionText} thành công!`);
         if (isCreateMode && response.data?.slug) {
-           router.push(`/articles/draft/${response.data.slug}`);
+          router.push(`/articles/draft/${response.data.slug}`);
         }
       }
+      router.push("/profile/me");
     } catch (error) {
       console.error("Lỗi submit:", error);
-      alert("Có lỗi xảy ra.");
+      console.log(error.error);
+      alert(error.message || "Đã có lỗi xảy ra trong quá trình lưu bài viết.");
     } finally {
       setIsLoading(false);
     }
@@ -193,7 +216,7 @@ const Page = ({ params }: { params: Promise<{ slug: string }> }) => {
     }
   };
   const removeTag = (t: string) => {
-    const newTags = tagList.filter(tag => tag !== t);
+    const newTags = tagList.filter((tag) => tag !== t);
     settagList(newTags);
     setValue("tagList", newTags);
   };
@@ -201,20 +224,39 @@ const Page = ({ params }: { params: Promise<{ slug: string }> }) => {
   return (
     <form className="space-y-4">
       <div className="p-4 border rounded-lg shadow-sm">
-         <div className="grid gap-3">
+        <div className="grid gap-3">
           <Label>Ảnh bìa</Label>
-          <Input ref={inputFileRef} type="file" onChange={onFileChange} accept="image/*" />
-          
+          <Input
+            ref={inputFileRef}
+            type="file"
+            onChange={onFileChange}
+            accept="image/*"
+          />
+
           {/* Hiển thị lỗi validation nếu có */}
           {errors.cover_image && (
-            <p className="text-red-500 text-sm">{errors.cover_image.message as string}</p>
+            <p className="text-red-500 text-sm">
+              {errors.cover_image.message as string}
+            </p>
           )}
 
           {/* Hiển thị Preview (Blob từ file mới HOẶC URL từ bài viết cũ) */}
           {blob && (
             <div className="relative mt-2 aspect-video w-full max-h-72 overflow-hidden rounded-md border">
-              <Image src={blob} alt="Preview" fill className="object-cover" unoptimized />
-              <Button variant="destructive" size="icon" className="absolute top-2 right-2" onClick={removeImage} type="button">
+              <Image
+                src={blob}
+                alt="Preview"
+                fill
+                className="object-cover"
+                unoptimized
+              />
+              <Button
+                variant="destructive"
+                size="icon"
+                className="absolute top-2 right-2"
+                onClick={removeImage}
+                type="button"
+              >
                 <X className="h-3 w-3" />
               </Button>
             </div>
@@ -222,37 +264,88 @@ const Page = ({ params }: { params: Promise<{ slug: string }> }) => {
         </div>
       </div>
 
-      <Input style={{ fontSize: "30px" }} className="h-16 font-bold" placeholder="Tiêu đề" {...register("title")} />
-      {errors.title && <p className="text-red-500 text-sm">{errors.title.message as string}</p>}
-      
+      <Input
+        style={{ fontSize: "30px" }}
+        className="h-16 font-bold"
+        placeholder="Tiêu đề"
+        {...register("title")}
+      />
+      {errors.title && (
+        <p className="text-red-500 text-sm">{errors.title.message as string}</p>
+      )}
+
       {/* Tag Input */}
       <div className="space-y-2">
-        <Input placeholder="Thêm thẻ..." value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={handleAddTag} />
+        <Input
+          placeholder="Thêm thẻ..."
+          value={tagInput}
+          onChange={(e) => setTagInput(e.target.value)}
+          onKeyDown={handleAddTag}
+        />
         <div className="flex flex-wrap gap-2">
           {tagList.map((tag, index) => (
-            <span key={index} className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800">
-              #{tag} <button type="button" onClick={() => removeTag(tag)} className="ml-2"><X className="h-3 w-3" /></button>
+            <span
+              key={index}
+              className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+            >
+              #{tag}{" "}
+              <button
+                type="button"
+                onClick={() => removeTag(tag)}
+                className="ml-2"
+              >
+                <X className="h-3 w-3" />
+              </button>
             </span>
           ))}
         </div>
       </div>
 
       <Input placeholder="Mô tả ngắn" {...register("description")} />
-      {errors.description && <p className="text-red-500 text-sm">{errors.description.message as string}</p>}
-      
+      {errors.description && (
+        <p className="text-red-500 text-sm">
+          {errors.description.message as string}
+        </p>
+      )}
+
       <Separator />
-      
-      <Editor content={editorContent} onChange={(content: string) => { setEditorContent(content); setValue("body", content); }} />
-      {errors.body && <p className="text-red-500 text-sm">{errors.body.message as string}</p>}
+
+      <Editor
+        content={editorContent}
+        onChange={(content: string) => {
+          setEditorContent(content);
+          setValue("body", content);
+        }}
+      />
+      {errors.body && (
+        <p className="text-red-500 text-sm">{errors.body.message as string}</p>
+      )}
 
       <div className="flex gap-2">
-        <Button variant="ghost" type="button" disabled={isLoading} onClick={handleSubmit((data) => onSubmit(data, "draft"))}>
-          {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+        <Button
+          variant="ghost"
+          type="button"
+          disabled={isLoading}
+          onClick={handleSubmit((data) => onSubmit(data, "draft"))}
+        >
+          {isLoading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Save className="h-4 w-4 mr-2" />
+          )}
           {isCreateMode ? "Lưu bản nháp" : "Cập nhật bản nháp"}
         </Button>
 
-        <Button type="button" disabled={isLoading} onClick={handleSubmit((data) => onSubmit(data, "pending"))}>
-          {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4 mr-2" />}
+        <Button
+          type="button"
+          disabled={isLoading}
+          onClick={handleSubmit((data) => onSubmit(data, "pending"))}
+        >
+          {isLoading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Upload className="h-4 w-4 mr-2" />
+          )}
           {isCreateMode ? "Đăng bài viết" : "Cập nhật & Đăng"}
         </Button>
       </div>
