@@ -41,7 +41,7 @@ const LoginPage = ({ className, ...props }: React.ComponentProps<"form">) => {
       if(response.success && response.data){
         await authApi.auth({ token: response.data.token });
         setUser(response.data);
-        router.push("/profile/me");
+        router.push("/profiles/me");
       }
     } catch (error) {
       console.error("Login failed:", error);

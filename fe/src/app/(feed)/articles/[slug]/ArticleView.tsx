@@ -249,7 +249,7 @@ export default function ArticleView({ initialArticle }: ArticleViewProps) {
     });
 
     const sortComments = (nodes: CommentWithChildren[]) => {
-      nodes.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      nodes.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
       nodes.forEach(node => {
         if (node.children.length > 0) sortComments(node.children);
       });

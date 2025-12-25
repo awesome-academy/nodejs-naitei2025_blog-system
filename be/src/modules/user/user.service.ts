@@ -111,7 +111,7 @@ export class UserService {
   async findByUsername(username: string): Promise<UserEntity> {
     const user = await this.userRepository.findOne({
       where: { username },
-      relations: ['following', 'followers', 'articles', 'favoritedArticles'],
+      relations: ['following', 'followers'],
     });
 
     if (!user) {

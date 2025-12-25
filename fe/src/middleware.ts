@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const privatePaths = ["/profile/me"]; // Thêm các path cần bảo vệ
+const privatePaths = ["/profiles/me"]; // Thêm các path cần bảo vệ
 const authPaths = ["/login", "/register"];
 
 export function middleware(request: NextRequest) {
@@ -16,7 +16,7 @@ export function middleware(request: NextRequest) {
 
   // 2. Đã đăng nhập (có token) mà vào login/register -> đá về home (hoặc trang me)
   if (authPaths.some((path) => pathname.startsWith(path)) && token) {
-    return NextResponse.redirect(new URL("/profile/me", request.url));
+    return NextResponse.redirect(new URL("/profiles/me", request.url));
   }
 
   return NextResponse.next();
@@ -24,5 +24,5 @@ export function middleware(request: NextRequest) {
 
 // Config matcher để middleware chạy trên các route này
 export const config = {
-  matcher: ["/profile/me", "/login", "/register"],
+  matcher: ["/profiles/me", "/login", "/register"],
 };

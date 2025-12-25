@@ -24,3 +24,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ message }, { status });
   }
 }
+
+export async function DELETE() {
+  try {
+    const response = NextResponse.json(
+      { message: "Logged out successfully" },
+      { status: 200 }
+    );
+
+    // Xóa cookie bằng cách set value rỗng và maxAge = 0
+    response.cookies.set({
+      name: "token",
+      value: "",
+      path: "/",
+      httpOnly: true,
+      maxAge: 0, // Cookie hết hạn ngay lập tức
+    });
+
+    return response;
+  } catch (error) {
+    return NextResponse.json(
+      { message: "Logout failed" },
+      { status: 500 }
+    );
+  }
+}

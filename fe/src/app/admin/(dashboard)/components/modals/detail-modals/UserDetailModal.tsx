@@ -80,7 +80,7 @@ const UserDetailModal = ({ item }: { item: UserListItem }) => {
           </div>
         </div>
         <DialogFooter className="border-t mt-4 pt-4">
-          <Link href={`/profile/${item.username}`}>
+          <Link href={`/profiles/${item.username}`}>
             <Button variant="default">Xem chi tiết hồ sơ</Button>
           </Link>
         </DialogFooter>
