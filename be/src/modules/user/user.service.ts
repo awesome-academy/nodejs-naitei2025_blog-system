@@ -90,7 +90,7 @@ export class UserService {
 
     const result = await this.userRepository.findOne({
       where: { id },
-      relations: ['following', 'followers', 'favoritedArticles', 'articles'],
+      relations: ['following', 'followers', 'articles'],
     });
     if (!result) {
       throw new NotFoundException('User not found', {
@@ -179,6 +179,7 @@ export class UserService {
 
   async getProfile(username: string, currentUserId?: number) {
     const user = await this.findByUsername(username);
+    console.log(user.followers);
     let isFollowing = false;
     if (currentUserId) {
       isFollowing = user.followers.some(

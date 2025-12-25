@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react"; // 1. Import useState
-import { useRouter } from "next/navigation"; // 2. Import useRouter
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArticleListItem } from "@/interfaces/article.interface";
 import {
   Item,
@@ -23,33 +23,50 @@ import Image from "next/image";
 import { Avatar, AvatarImage } from "./ui/avatar";
 import { Button } from "./ui/button";
 import { Toggle } from "./ui/toggle";
-import { Eye, Heart, MessageCircle } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth"; // 3. Import useAuth
-import articleApi from "@/api/article.api"; // 4. Import API
+import { Eye, Heart, MessageCircle, Trash2 } from "lucide-react"; // 1. Import Trash2 icon
+import { useAuth } from "@/hooks/useAuth";
+import articleApi from "@/api/article.api";
 
 const PostList = ({ articles }: { articles: ArticleListItem[] }) => {
+  const router = useRouter(); // Cần router để refresh sau khi xóa
+
   if (!articles || articles.length === 0) {
     return <div>Chưa có bài viết nào.</div>;
   }
+
+  // Hàm xử lý xóa bài viết và refresh danh sách
+  const handleArticleDeleted = () => {
+    router.refresh(); // Refresh lại Server Component để lấy dữ liệu mới
+  };
+
   return (
     <ItemGroup className="grid gap-4">
       {articles.map((article) => (
-        <Post key={article.slug} article={article} />
+        <Post
+          key={article.slug}
+          article={article}
+          onDeleted={handleArticleDeleted} // Truyền callback xuống
+        />
       ))}
     </ItemGroup>
   );
 };
 
-const Post = ({ article }: { article: ArticleListItem }) => {
+const Post = ({
+  article,
+  onDeleted,
+}: {
+  article: ArticleListItem;
+  onDeleted?: () => void;
+}) => {
   const router = useRouter();
   const { user } = useAuth();
   const token = user?.token;
 
-  // State quản lý trạng thái like và số lượng like
-  // Khởi tạo giá trị ban đầu từ props
   const [isFavorited, setIsFavorited] = useState(article.favorited);
   const [favoritesCount, setFavoritesCount] = useState(article.favorites_count);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false); // State cho nút xóa
 
   const handleFavoriteToggle = async () => {
     if (!token) {
@@ -85,6 +102,27 @@ const Post = ({ article }: { article: ArticleListItem }) => {
     }
   };
 
+  // Logic xóa bài viết
+  const handleDelete = async () => {
+    if (!token) return;
+
+    if (confirm("Bạn có chắc chắn muốn xóa bài viết nháp này không?")) {
+      setIsDeleting(true);
+      console.log(article.slug);
+      try {
+        await articleApi.removeArticle(article.slug, token);
+        if (onDeleted) {
+          onDeleted(); // Gọi callback để refresh danh sách
+        }
+      } catch (error) {
+        console.error("Lỗi xóa bài viết:", error);
+        alert("Không thể xóa bài viết. Vui lòng thử lại.");
+      } finally {
+        setIsDeleting(false);
+      }
+    }
+  };
+
   // FIX LOGIC LINK:
   // 1. Kiểm tra status không phân biệt hoa thường (Backend thường trả về DRAFT)
   const isDraft = article.status === "draft" || article.status === "DRAFT";
@@ -93,6 +131,9 @@ const Post = ({ article }: { article: ArticleListItem }) => {
   const postLink = isDraft
     ? `/articles/draft/${article.slug}`
     : `/articles/${article.slug}`;
+
+  // Kiểm tra quyền sở hữu: user hiện tại là tác giả
+  const isOwner = user?.username === article.author.username;
 
   return (
     <Item key={article.slug} variant="outline">
@@ -163,32 +204,48 @@ const Post = ({ article }: { article: ArticleListItem }) => {
         </div>
       </ItemContent>
       <ItemFooter className="">
-        <div className="flex gap-6">
-          <div className="flex items-center">
-            <Toggle
+        <div className="flex gap-6 w-full justify-between items-center">
+          <div className="flex gap-6">
+            <div className="flex items-center">
+              <Toggle
+                size="sm"
+                pressed={isFavorited}
+                onPressedChange={handleFavoriteToggle}
+                // 1. Xóa các class phức tạp, chỉ giữ lại class để bỏ background xám khi active
+                className="hover:bg-transparent data-[state=on]:bg-transparent px-0"
+              >
+                {/* 2. Áp dụng class màu trực tiếp vào Icon dựa trên state */}
+                <Heart
+                  className={`h-4 w-4 transition-colors ${
+                    isFavorited ? "fill-red-500 stroke-red-500" : ""
+                  }`}
+                />
+              </Toggle>
+              <span className="text-sm ml-1">{favoritesCount}</span>
+            </div>
+            <div className="flex items-center">
+              <MessageCircle className="h-4 w-4" />
+              <span className="text-sm ml-1">{article.comments_count}</span>
+            </div>
+            <div className="flex items-center">
+              <Eye className="h-4 w-4" />
+              <span className="text-sm ml-1">{article.views}</span>
+            </div>
+          </div>
+
+          {/* Nút xóa chỉ hiện khi là Draft và là chủ sở hữu */}
+          {isDraft && isOwner && (
+            <Button
+              variant="ghost"
               size="sm"
-              pressed={isFavorited}
-              onPressedChange={handleFavoriteToggle}
-              // 1. Xóa các class phức tạp, chỉ giữ lại class để bỏ background xám khi active
-              className="hover:bg-transparent data-[state=on]:bg-transparent px-0"
+              className="text-red-500 hover:text-red-700 hover:bg-red-50"
+              onClick={handleDelete}
+              disabled={isDeleting}
             >
-              {/* 2. Áp dụng class màu trực tiếp vào Icon dựa trên state */}
-              <Heart
-                className={`h-4 w-4 transition-colors ${
-                  isFavorited ? "fill-red-500 stroke-red-500" : ""
-                }`}
-              />
-            </Toggle>
-            <span className="text-sm ml-1">{favoritesCount}</span>
-          </div>
-          <div className="flex items-center">
-            <MessageCircle className="h-4 w-4" />
-            <span className="text-sm ml-1">{article.comments_count}</span>
-          </div>
-          <div className="flex items-center">
-            <Eye className="h-4 w-4" />
-            <span className="text-sm ml-1">{article.views}</span>
-          </div>
+              <Trash2 className="h-4 w-4 mr-1" />
+              {isDeleting ? "Đang xóa..." : "Xóa"}
+            </Button>
+          )}
         </div>
       </ItemFooter>
     </Item>

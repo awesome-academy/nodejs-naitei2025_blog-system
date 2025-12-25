@@ -1,5 +1,6 @@
 import { ArticleDetail, ArticleListItem } from "@/interfaces/article.interface";
 import http from "@/lib/http";
+import { get } from "axios";
 import { time } from "console";
 
 const articleApi = {
@@ -44,6 +45,18 @@ const articleApi = {
         },
       }
     ),
+  getFeed: (token: string, limit?: number, offset?: number) =>
+    http.get<ArticleListItem[]>(
+      `/articles/feed${limit ? `?limit=${limit}` : ""}${
+        offset ? `${limit ? "&" : "?"}offset=${offset}` : ""
+      }`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    ),
+    
   approveArticle: (slug: string, token: string) =>
     http.put(`/articles/${slug}/approve`, null, {
       headers: {

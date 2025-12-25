@@ -25,6 +25,8 @@ export class UserListItemDto extends UserBasicDto {
   created_at: Date;
   @Expose()
   role: 'USER' | 'ADMIN';
+  @Expose()
+  isFollowing: boolean;
 }
 
 export class UserDetailDto extends UserListItemDto {

@@ -1,11 +1,11 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cookies } from "next/headers";
-import { notFound, redirect } from "next/navigation"; // Import thêm
+import { notFound, redirect } from "next/navigation";
 import userApi from "@/api/user.api";
 import PostList from "@/components/PostList";
 import { ArticleListItem } from "@/interfaces/article.interface";
 import { UserDetail } from "@/interfaces/user.interface";
 import articleApi from "@/api/article.api";
+import { getAuthServer } from "@/lib/auth-server";
 
 export default async function Page({
   params,
@@ -13,70 +13,85 @@ export default async function Page({
   params: Promise<{ username: string }>;
 }) {
   const { username } = await params;
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value || "";
+  const me = await getAuthServer();
+  const token = me?.token || ""; // Lấy token an toàn
 
   let user: UserDetail | null = null;
-  let errorMsg = "";
 
-  if (username === "me") {
-    // Middleware đã lo việc check !token rồi, nên ở đây chắc chắn có token string
-    // Nhưng ta cần check xem token đó gọi API có sống không
-
-    const response = await userApi.getMe(token);
-
-    if (response.success && response.data) {
-      user = response.data;
+  try {
+    if (username === "me") {
+      if (!token) {
+        redirect("/login");
+      }
+      const response = await userApi.getMe(token);
+      if (response.success && response.data) {
+        user = response.data;
+      } else {
+        redirect("/login"); // Token sai/hết hạn -> Login lại
+      }
     } else {
-      // CASE QUAN TRỌNG: Có token nhưng API trả lỗi (Token hết hạn/Fake)
-      // Redirect về login để user đăng nhập lại
+      // 1. Sửa lỗi logic: Kiểm tra me tồn tại trước khi so sánh username
+      if (me && username === me.username) {
+        redirect("/profile/me");
+      }
+
+      // 2. Gọi API lấy profile người khác
+      const response = await userApi.getProfile(token, username);
+      if (response.success && response.data) {
+        user = response.data;
+      } else {
+        return notFound();
+      }
+    }
+  } catch (error: any) {
+    // 3. Bắt lỗi 401 (Unauthorized) để không sập trang
+    console.error("Error fetching profile:", error);
+    if (error?.status === 401 || error?.message === "Unauthorized") {
       redirect("/login");
     }
-  } else {
-    // Logic xem profile người khác giữ nguyên
-    const response = await userApi.getProfile(token, username);
-    if (response.success && response.data) {
-      user = response.data;
-    } else {
-      return notFound();
-    }
+    return notFound();
   }
 
-  // 2. Kiểm tra nếu user vẫn null (do lỗi API ở case 'me')
+  // Nếu vẫn không có user sau khi chạy logic trên
   if (!user) {
-    return <div className="p-4 text-red-500">Lỗi: {errorMsg}</div>;
+    return notFound();
   }
 
-  // 3. Phân loại bài viết an toàn (Safe Destructuring)
-  // Dùng toán tử ?. và ?? [] để tránh lỗi nếu articles null
-  const response = await articleApi.getArticleByAuthor(user.username, 100, 0, token);
-  if (!response.success || !response.data) {
-    return <div className="p-4 text-red-500">Lỗi tải bài viết.</div>;
+  // --- PHẦN DƯỚI GIỮ NGUYÊN ---
+  // Lấy danh sách bài viết (Cũng nên bọc try/catch nếu cần thiết)
+  let articles: ArticleListItem[] = [];
+  try {
+    const response = await articleApi.getArticleByAuthor(user.username, 100, 0, token);
+    if (response.success && response.data) {
+      articles = response.data.items;
+    }
+  } catch (error) {
+    console.error("Lỗi tải bài viết:", error);
   }
-  const articles: ArticleListItem[] = response.data.items;
 
   const drafts = articles.filter((a) => a.status === "draft");
   const published = articles.filter((a) => a.status === "published");
   const pendings = articles.filter((a) => a.status === "pending");
+  
   let favorited: ArticleListItem[] = [];
-  const favoritedResponse = await articleApi.getArticleByFavorited(
-    user.username,
-    100,
-    0,
-    token
-  );
-  if (favoritedResponse.success && favoritedResponse.data) {
-    favorited = favoritedResponse.data.items;
+  try {
+    const favoritedResponse = await articleApi.getArticleByFavorited(
+        user.username,
+        100,
+        0,
+        token
+    );
+    if (favoritedResponse.success && favoritedResponse.data) {
+        favorited = favoritedResponse.data.items;
+    }
+  } catch (error) {
+      console.error("Lỗi tải bài yêu thích:", error);
   }
 
-  // 4. Xác định xem đây có phải là profile của chính người đang xem không
-  // username === 'me' HOẶC username trên url trùng với username trong data trả về (trường hợp user đã login xem profile của chính mình qua url public)
-  // Lưu ý: Logic này tương đối, tốt nhất API getProfile nên trả về trường `isOwner`
-  const isOwnProfile = username === "me"; // Cần logic so sánh chuẩn xác hơn nếu có thông tin currentUser
+  const isOwnProfile = username === "me";
 
   return (
     <div className="container mx-auto py-6">
-      {/* Phần Header Profile (Avatar, Bio...) nên đặt ở đây */}
       <h1 className="text-2xl font-bold mb-4">{user.username}</h1>
 
       <Tabs defaultValue="published-articles" className="w-full">
@@ -84,7 +99,6 @@ export default async function Page({
           <TabsTrigger value="published-articles">Đã xuất bản</TabsTrigger>
           <TabsTrigger value="favorited-articles">Đã thích</TabsTrigger>
 
-          {/* 5. Chỉ hiển thị Nháp và Chờ duyệt nếu là Chính chủ */}
           {isOwnProfile && (
             <>
               <TabsTrigger value="pending-articles">Chờ duyệt</TabsTrigger>
